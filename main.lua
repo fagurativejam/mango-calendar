@@ -5,14 +5,22 @@ local selected_day                    -- Selected date state
 
 -- ==================== Declarative Theme Resolution Engine ====================
 local theme = {}
-if love.filesystem.getInfo("theme.lua") then
-    -- Executes the theme.lua string generated inside your configuration paths!
-    local chunk = love.filesystem.load("theme.lua")
+
+-- PORTABLE PATH RESOLUTION: Dynamically calculates the absolute target directory paths 
+-- at runtime using system environment variables, ensuring zero hardcoded file paths.
+local user_home = os.getenv("HOME")
+local config_path = user_home and (user_home .. "/.config/love/mango-calendar/theme.lua") or nil
+local file = config_path and io.open(config_path, "r") or nil
+
+if file then
+    file:close()
+    -- Safely loads and executes the home-manager written file as a native Lua chunk!
+    local chunk = loadfile(config_path)
     theme = chunk()
 else
-    -- Fallback Baseline Safety Defaults (Your custom TokyoNight UI motif)
+    -- Fallback Baseline Safety Defaults (if developing standalone outside of NixOS)
     theme.font_size = 22
-    theme.font_face = "Arial" -- Standard system fallback
+    theme.font_face = "font.ttf" -- Points to localized asset directory
     theme.width = 320
     theme.height = 240
     theme.colors = {
