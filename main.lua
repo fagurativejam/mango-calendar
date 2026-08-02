@@ -14,13 +14,16 @@ local file = config_path and io.open(config_path, "r") or nil
 
 if file then
     file:close()
-    -- Safely loads and executes the home-manager written file as a native Lua chunk!
+    -- FIXED EXECUTION: loadfile only compiles the chunk; we MUST append () to execute it 
+    -- and return the native dictionary values into our theme tracking variable!
     local chunk = loadfile(config_path)
-    theme = chunk()
+    if chunk then
+        theme = chunk()
+    end
 else
     -- Fallback Baseline Safety Defaults (if developing standalone outside of NixOS)
     theme.font_size = 22
-    theme.font_face = "font.ttf" -- Points to localized asset directory
+    theme.font_face = nil -- FIXED: Nil forces LÖVE to fall back to its internal built-in default font!
     theme.width = 320
     theme.height = 240
     theme.colors = {
@@ -86,8 +89,12 @@ function love.load()
     btn_next_mo = { x = 255, y = 20, w = 30, h = 30, label = ">"  }
     btn_next_yr = { x = 295, y = 20, w = 30, h = 30, label = ">>" }
 
-    -- Dynamic Font Application mapping strings
-    font_main = love.graphics.newFont(theme.font_face, theme.font_size)
+    -- FIXED FONT INITIALIZATION: If theme.font_face is nil, it uses the pristine internal engine font safely
+    if theme.font_face then
+        font_main = love.graphics.newFont(theme.font_face, theme.font_size)
+    else
+        font_main = love.graphics.newFont(theme.font_size)
+    end
     love.graphics.setFont(font_main)
     
     recalculate_calendar()
