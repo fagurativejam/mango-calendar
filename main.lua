@@ -3,6 +3,27 @@ local real_day, real_month, real_year -- Actual current calendar date
 local display_month, display_year     -- Date the user is actively viewing
 local selected_day                    -- Selected date state
 
+-- ==================== Declarative Theme Resolution Engine ====================
+local theme = {}
+if love.filesystem.getInfo("theme.lua") then
+    -- Executes the theme.lua string generated inside your configuration paths!
+    local chunk = love.filesystem.load("theme.lua")
+    theme = chunk()
+else
+    -- Fallback Baseline Safety Defaults (Your custom TokyoNight UI motif)
+    theme.font_size = 22
+    theme.font_face = "Arial" -- Standard system fallback
+    theme.width = 320
+    theme.height = 240
+    theme.colors = {
+        bg     = { 0.1, 0.11, 0.15, 0.95 },
+        muted  = { 0.35, 0.4, 0.55, 1.0 },
+        accent = { 0.48, 0.63, 0.97, 1.0 },
+        text   = { 0.8, 0.83, 0.88, 1.0 },
+        today  = { 0.98, 0.46, 0.46, 0.35 }
+    }
+end
+
 -- Layout Geometry Configurations
 local days_header = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
 local calendar_grid = {}
@@ -44,7 +65,12 @@ function love.load()
     -- Initialize viewing tracking matrix values to current system metrics
     display_month = real_month
     display_year = real_year
-    selected_day = real_day -- Default selection badge highlights today
+    selected_day = real_day 
+
+    -- DYNAMIC DIMENSION RESOLUTION: Forces container window to respect your Nix configurations!
+    if theme.width and theme.height then
+        love.window.setMode(theme.width, theme.height, { resizable = false })
+    end
 
     -- Establish bounding box dimensions for headers button actions
     btn_prev_yr = { x = 15,  y = 20, w = 30, h = 30, label = "<<" }
@@ -52,19 +78,20 @@ function love.load()
     btn_next_mo = { x = 255, y = 20, w = 30, h = 30, label = ">"  }
     btn_next_yr = { x = 295, y = 20, w = 30, h = 30, label = ">>" }
 
-    font_main = love.graphics.newFont(22)
+    -- Dynamic Font Application mapping strings
+    font_main = love.graphics.newFont(theme.font_face, theme.font_size)
     love.graphics.setFont(font_main)
     
     recalculate_calendar()
 end
 
 function love.draw()
-    -- Main structural canvas container backdrop block
-    love.graphics.setColor(0.1, 0.11, 0.15, 0.95) -- Deep TokyoNight UI motif
+    -- Main structural canvas container backdrop block using evaluated values
+    love.graphics.setColor(theme.colors.bg) 
     love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight(), 12, 12)
 
     -- Render Interactive Header Navigation Buttons
-    love.graphics.setColor(0.35, 0.4, 0.55, 1)
+    love.graphics.setColor(theme.colors.muted)
     local buttons = {btn_prev_yr, btn_prev_mo, btn_next_mo, btn_next_yr}
     for _, btn in ipairs(buttons) do
         love.graphics.printf(btn.label, font_main, btn.x, btn.y, btn.w, "center")
@@ -72,7 +99,7 @@ function love.draw()
 
     -- Draw Main Active Month & Year Header Title Text String
     local month_str = os.date("%B %Y", os.time({year = display_year, month = display_month, day = 1}))
-    love.graphics.setColor(0.48, 0.63, 0.97, 1) -- Highlight tint
+    love.graphics.setColor(theme.colors.accent) 
     love.graphics.printf(month_str, font_main, 90, 20, 160, "center")
 
     -- Matrix spatial offset parameters
@@ -82,7 +109,7 @@ function love.draw()
     local spacing_y = 35
 
     -- Render Day-Of-The-Week Text column headers strings
-    love.graphics.setColor(0.35, 0.4, 0.55, 1)
+    love.graphics.setColor(theme.colors.muted)
     for idx, day_label in ipairs(days_header) do
         local x = start_x + (idx - 1) * spacing_x
         love.graphics.print(day_label, x, start_y)
@@ -93,7 +120,6 @@ function love.draw()
         local x = start_x + (item.col - 1) * spacing_x
         local y = start_y + 15 + (item.row * spacing_y)
 
-        -- Cache current calculated coordinates block dimensions for structural mouse hit detections
         item.x1 = x - 6
         item.y1 = y - 2
         item.w  = 34
@@ -101,17 +127,17 @@ function love.draw()
 
         -- 1. Structural Check: Is this box cell element the actual system current day?
         if item.day == real_day and display_month == real_month and display_year == real_year then
-            love.graphics.setColor(0.98, 0.46, 0.46, 0.3) -- Faded red outline backdrop accent
+            love.graphics.setColor(theme.colors.today) 
             love.graphics.rectangle("fill", item.x1, item.y1, item.w, item.h, 6, 6)
         end
 
         -- 2. Structural Check: Is this block element matching the selected_day focus target state?
         if item.day == selected_day then
-            love.graphics.setColor(0.48, 0.63, 0.97, 1) -- Bold styling accent highlight container color
+            love.graphics.setColor(theme.colors.accent) 
             love.graphics.rectangle("fill", item.x1, item.y1, item.w, item.h, 6, 6)
-            love.graphics.setColor(1, 1, 1, 1)          -- Pure white text readability override
+            love.graphics.setColor(theme.colors.bg)      -- Swaps text to background color for clear readability
         else
-            love.graphics.setColor(0.8, 0.83, 0.88, 1)   -- Standard grid text tone parameters
+            love.graphics.setColor(theme.colors.text)   
         end
 
         love.graphics.print(string.format("%2d", item.day), x, y)
@@ -124,14 +150,12 @@ local function check_collision(mx, my, btn)
 end
 
 function love.mousepressed(mx, my, button)
-    -- Right click dismiss handle: right clicking anywhere inside/edges drops the app instantly
     if button == 2 then
         love.event.quit()
         return
     end
 
-    if button == 1 then -- Left Click evaluation checks only
-        -- Handle Header Click Navigation Adjustments
+    if button == 1 then 
         if check_collision(mx, my, btn_prev_yr) then
             display_year = display_year - 1
             recalculate_calendar()
@@ -148,7 +172,6 @@ function love.mousepressed(mx, my, button)
             recalculate_calendar()
         end
 
-        -- Handle Individual Grid Items Selection Assignments
         for _, item in ipairs(calendar_grid) do
             if item.x1 and mx >= item.x1 and mx <= (item.x1 + item.w) and my >= item.y1 and my <= (item.y1 + item.h) then
                 selected_day = item.day
