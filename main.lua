@@ -6,15 +6,10 @@ local selected_day                    -- Selected date state
 -- ==================== Declarative Theme Resolution Engine ====================
 local theme = {}
 
--- PORTABLE PATH LOOKUP: Scans standard Linux XDG user paths for your system-generated 
--- theme file, ensuring total isolation and safety for public GitHub distribution.
-local user_home = os.getenv("HOME")
-local config_path = user_home and (user_home .. "/.config/love/mango-calendar/theme.lua") or nil
-local file = config_path and io.open(config_path, "r") or nil
-
-if file then
-    file:close()
-    local chunk = loadfile(config_path)
+-- FIXED NATIVE LOOKUP: Because Home Manager is writing straight into the LÖVE data path,
+-- we can query and load the configuration natively without breaking our git distribution sandbox!
+if love.filesystem.getInfo("theme.lua") then
+    local chunk = love.filesystem.load("theme.lua")
     if chunk then
         theme = chunk()
     end
@@ -52,7 +47,6 @@ local function get_days_in_month(month, year)
     return days[month]
 end
 
--- Recompute layout and window size based on active tracking variables
 local function recalculate_calendar()
     calendar_grid = {}
     row_weeks = {}
