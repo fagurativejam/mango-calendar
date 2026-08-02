@@ -5,6 +5,9 @@ local selected_day                    -- Selected date state
 
 -- ==================== Declarative Theme Resolution Engine ====================
 local theme = {}
+
+-- PORTABLE PATH LOOKUP: Scans standard Linux XDG user paths for your system-generated 
+-- theme file, ensuring total isolation and safety for public GitHub distribution.
 local user_home = os.getenv("HOME")
 local config_path = user_home and (user_home .. "/.config/love/mango-calendar/theme.lua") or nil
 local file = config_path and io.open(config_path, "r") or nil
@@ -12,10 +15,15 @@ local file = config_path and io.open(config_path, "r") or nil
 if file then
     file:close()
     local chunk = loadfile(config_path)
-    if chunk then theme = chunk() end
+    if chunk then
+        theme = chunk()
+    end
 else
+    -- Fallback Baseline Safety Defaults (if cloned/run standalone outside of NixOS)
     theme.font_size = 22
     theme.font_face = nil 
+    theme.width = 320
+    theme.height = 240
     theme.colors = {
         bg     = { 0.1, 0.11, 0.15, 0.95 },
         muted  = { 0.35, 0.4, 0.55, 1.0 },
@@ -146,7 +154,6 @@ function love.draw()
         end
     end
 
-    -- Find the active row/col bounds of the user's selected date state
     local sel_row, sel_col = nil, nil
     for _, item in ipairs(calendar_grid) do
         if item.day == selected_day then
@@ -156,7 +163,6 @@ function love.draw()
         end
     end
 
-    -- DRAW DATE GRID & SELECTION LINES
     for _, item in ipairs(calendar_grid) do
         local x = start_x + (item.col - 1) * cell_w
         local y = start_y + 24 + ((item.row - 1) * spacing_y) 
@@ -166,10 +172,8 @@ function love.draw()
         item.x1 = x + 2
         item.y1 = y + 1
 
-        -- FIXED STYLING ADJUSTMENT: Boosted alpha opacity parameter from 0.12 to 0.28 
-        -- to make the dynamic crosshair track noticeably more defined and vibrant!
         if item.day ~= selected_day and (item.row == sel_row or item.col == sel_col) then
-            love.graphics.setColor(theme.colors.muted[1], theme.colors.muted[2], theme.colors.muted[3], 0.28)
+            love.graphics.setColor(theme.colors.muted, theme.colors.muted, theme.colors.muted, 0.28)
             love.graphics.rectangle("fill", item.x1, item.y1, item.w, item.h, 4, 4)
         end
 
