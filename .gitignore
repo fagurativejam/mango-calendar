@@ -1,0 +1,13 @@
+#nvim swap and backup files
+*.swp 
+*.swo
+.netrwhist
+
+#nix direnv local environments
+.direnv/
+.nix-shell/
+result
+
+#os generated files
+.DS_Store
+Thumbs.db
