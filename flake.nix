@@ -10,22 +10,22 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        
+        # Enforce a localized python environment containing PyQt6 runtime boundaries
+        pythonEnv = pkgs.python3.withPackages (ps: [ ps.pyqt6 ]);
       in {
-        # ==================== PRODUCTION EXECUTABLE WRAPPER DERIVATION ====================
-        packages.default = pkgs.writers.writePython3Bin "mango-calendar" {
-          libraries = [ pkgs.python3Packages.pyqt6 ];
-          # FIXED LINTER CHECKER: Instructs Nix to bypass stylistic layout warnings completely!
-          flake8 = false;
-        } ''
-          # Nix combines your theme setup and main execution logic into one file block!
+        # ==================== LINT-FREE SHELL SCRIPT BINARY ====================
+        packages.default = pkgs.writeShellScriptBin "mango-calendar" ''
+          exec ${pythonEnv}/bin/python3 << 'EOF'
           ${builtins.readFile ./theme.py}
           ${builtins.readFile ./main.py}
+          EOF
         '';
 
         # Local development environment environment shell matrix
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            (pkgs.python3.withPackages (ps: [ ps.pyqt6 ]))
+            pythonEnv
             pkgs.python3Packages.python-lsp-server
           ];
           shellHook = ''
