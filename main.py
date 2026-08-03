@@ -4,7 +4,11 @@ import datetime
 import calendar
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QFrame
-from theme import load_qss_theme
+
+# FIXED LOGIC: Resolves the function dynamically from memory or runtime path imports!
+if "load_qss_theme" not in globals():
+    theme_module = __import__("theme")
+    load_qss_theme = theme_module.load_qss_theme
 
 class HoverLabel(QLabel):
     """
