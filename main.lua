@@ -5,9 +5,9 @@ local selected_day                    -- Selected date state
 
 -- ==================== Declarative Theme Resolution Engine ====================
 local theme = {}
+local user_home = os.getenv("HOME") or "/home/figs"
+local sandbox_dir = user_home .. "/.local/share/love/mango-calendar/"
 
--- FIXED NATIVE LOOKUP: Because Home Manager is writing straight into the LÖVE data path,
--- we can query and load the configuration natively without breaking our git distribution sandbox!
 if love.filesystem.getInfo("theme.lua") then
     local chunk = love.filesystem.load("theme.lua")
     if chunk then
@@ -47,6 +47,7 @@ local function get_days_in_month(month, year)
     return days[month]
 end
 
+-- Recompute layout and window size based on active tracking variables
 local function recalculate_calendar()
     calendar_grid = {}
     row_weeks = {}
@@ -94,8 +95,22 @@ function love.load()
     real_day, real_month, real_year = now.day, now.month, now.year
     display_month, display_year, selected_day = real_month, real_year, real_day
 
-    if theme.font_face then font_main = love.graphics.newFont(theme.font_face, theme.font_size)
-    else font_main = love.graphics.newFont(theme.font_size) end
+    if theme.width and theme.height then
+        love.window.setMode(theme.width, theme.height, { resizable = false })
+    end
+
+    -- FIXED FONT RESOLUTION: Calculate absolute path to pull font safely from the sandbox folder
+    local absolute_font_path = sandbox_dir .. (theme.font_face or "font.ttf")
+    local font_file = io.open(absolute_font_path, "r")
+
+    if font_file then
+        font_file:close()
+        -- Open via raw filesystem handle to bypass LÖVE source folder restrictions
+        font_main = love.graphics.newFont(absolute_font_path, theme.font_size)
+    else
+        -- Fall back to LÖVE's built-in default font engine if file isn't present
+        font_main = love.graphics.newFont(theme.font_size)
+    end
     love.graphics.setFont(font_main)
 
     local font_w = font_main:getWidth("00")
