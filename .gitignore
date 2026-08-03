@@ -1,13 +1,19 @@
-#nvim swap and backup files
-*.swp 
-*.swo
-.netrwhist
-
-#nix direnv local environments
-.direnv/
-.nix-shell/
+# Block local flake compilation results paths
 result
+result-*
 
-#os generated files
-.DS_Store
-Thumbs.db
+# Block Home Manager's generated style overrides during local testing
+theme.json
+theme.lua
+.config/
+
+# Standard Python compilation caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.venv/
+env/
+

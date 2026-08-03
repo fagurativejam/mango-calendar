@@ -1,5 +1,5 @@
 {
-  description = "A reproducible Lua calendar widget";
+  description = "A modern Python and PyQt6 desktop calendar widget environment";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -10,39 +10,22 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        
+        # Formulate Python 3 environment bundled with true PyQt6 bindings
+        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+          pyqt6
+        ]);
       in {
-        # --- 1. Package compilation derivation output ---
-        packages.default = pkgs.stdenv.mkDerivation {
-          pname = "mango-calendar";
-          version = "1.0.0";
-          src = ./.; # Automatically packages your main.lua and conf.lua files
-
-          nativeBuildInputs = [ pkgs.makeWrapper ];
-
-          installPhase = ''
-            # Create isolated target destination storage trees inside the Nix store
-            mkdir -p $out/share/mango-calendar $out/bin
-            
-            # Copy all files cleanly into the store directory path
-            cp -r ./* $out/share/mango-calendar/
-
-            # Generates a wrapper script binary that hooks love directly to the assets!
-            makeWrapper ${pkgs.love}/bin/love $out/bin/mango-calendar \
-              --add-flags "$out/share/mango-calendar"
-          '';
-        };
-
-        # --- 2. Your existing local development environment ---
+        # 1. Local development environment shell matrix
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [
-            lua        
-            love       
-            lua-language-server 
+          buildInputs = [
+            pythonEnv
+            pkgs.python3Packages.python-lsp-server # Provides autocomplete for your IDE
           ];
 
           shellHook = ''
-            echo "  Lua Environment Loaded!  "
-            lua -v
+            echo " 🐍 Python & PyQt6 Development Matrix Loaded! 🐍 "
+            python --version
           '';
         };
       });
