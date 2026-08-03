@@ -239,9 +239,11 @@ class MangoCalendar(QWidget):
             self.close()
 
 if __name__ == "__main__":
+    os.environ["QT_LOGGING_RULES"] = "qt.qpa.services.warning=false"
+    
     app = QApplication(sys.argv)
     app.setDesktopFileName("mango-calendar")
+    
     widget = MangoCalendar()
     widget.show()
     sys.exit(app.exec())
-
