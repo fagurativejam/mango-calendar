@@ -240,6 +240,7 @@ class MangoCalendar(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setDesktopFileName("mango-calendar")
     widget = MangoCalendar()
     widget.show()
     sys.exit(app.exec())
