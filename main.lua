@@ -5,16 +5,31 @@ local selected_day                    -- Selected date state
 
 -- ==================== Declarative Theme Resolution Engine ====================
 local theme = {}
-
--- PORTABLE PATH LOOKUP: Uses LÖVE's native sandboxed virtual filesystem pipeline
--- to safely search for your system-generated theme file, keeping it clean for public Git.
 if love.filesystem.getInfo("theme.lua") then
     local chunk = love.filesystem.load("theme.lua")
-    if chunk then
-        theme = chunk()
+    if chunk then theme = chunk() end
+end
+
+-- Helper to parse standard "rgba(R, G, B, A)" strings into LÖVE decimal float arrays
+local function parse_css_color(css_str)
+    if not css_str then return {1, 1, 1, 1} end
+    local channels = {}
+    for num in string.gmatch(css_str, "%d+%.?%d*") do
+        table.insert(channels, tonumber(num))
     end
+    -- Scale 0-255 channels down to 0.0-1.0 floats; keep Alpha channel untouched
+    return { channels[1]/255, channels[2]/255, channels[3]/255, channels[4] }
+end
+
+-- Resolve colors from the text blocks or fallback to default TokyoNight values
+theme.colors = {}
+if theme.colors_css then
+    theme.colors.bg     = parse_css_color(theme.colors_css.bg)
+    theme.colors.muted  = parse_css_color(theme.colors_css.muted)
+    theme.colors.accent = parse_css_color(theme.colors_css.accent)
+    theme.colors.text   = parse_css_color(theme.colors_css.text)
+    theme.colors.today  = parse_css_color(theme.colors_css.today)
 else
-    -- Fallback Baseline Safety Defaults (if cloned/run standalone outside of NixOS)
     theme.font_size = 22
     theme.font_face = nil 
     theme.width = 320
@@ -31,7 +46,7 @@ end
 -- Layout Geometry Configurations
 local days_header = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
 local calendar_grid = {}
-local row_weeks = {} -- Sequential row-by-row week container
+local row_weeks = {} 
 local font_main
 
 -- Dynamically Evaluated Dimensions
@@ -63,36 +78,25 @@ local function recalculate_calendar()
         local row = math.ceil(slot / 7)
         local col = (slot - 1) % 7 + 1
         if row > max_rows then max_rows = row end
-        
         table.insert(calendar_grid, {day = day, row = row, col = col})
         slot = slot + 1
     end
 
-    -- BULLETPROOF SEQUENTIAL COUNTER ENGINE:
     local start_week = tonumber(os.date("%V", first_day_time))
-    
-    -- Clean up system boundary anomalies for January 1st
-    if display_month == 1 and start_week >= 52 then
-        start_week = 1
-    end
+    if display_month == 1 and start_week >= 52 then start_week = 1 end
 
-    -- Sequentially populate each horizontal row by incrementing the base count
     local current_week = start_week
     for r = 1, max_rows do
         row_weeks[r] = current_week
         current_week = current_week + 1
-        
-        -- If we spill past week 52/53 at year end, cleanly roll over to week 1
         if current_week > 53 or (current_week > 52 and display_month == 12 and r < max_rows - 1) then
             current_week = 1
         end
     end
 
-    -- Uses precise row multipliers to trim all ghost empty space at the bottom container edge
     window_h = start_y + 24 + (max_rows * spacing_y) + 12
     love.window.setMode(window_w, window_h, { resizable = false })
 
-    -- Symmetrically balance navigation arrow positioning bounds
     btn_prev_yr.x = 12
     btn_prev_mo.x = 12 + cell_w
     btn_next_mo.x = window_w - (12 + (cell_w * 2.2))
@@ -104,11 +108,9 @@ function love.load()
     real_day, real_month, real_year = now.day, now.month, now.year
     display_month, display_year, selected_day = real_month, real_year, real_day
 
-    -- FIXED FONT RESOLUTION: Safe, standard asset call that looks inside LÖVE's sandbox!
     if theme.font_face and love.filesystem.getInfo(theme.font_face) then
         font_main = love.graphics.newFont(theme.font_face, theme.font_size or 22)
     else
-        -- Clean fallback if font asset is missing or running standalone outside of NixOS
         font_main = love.graphics.newFont(theme.font_size or 22)
     end
     love.graphics.setFont(font_main)
@@ -119,10 +121,8 @@ function love.load()
     
     week_x = 15
     start_x = week_x + math.ceil(font_main:getWidth("W00 ") * 1.1)
-    
     start_y = 60 
     spacing_y = math.ceil(cell_h * 1.15)
-    
     window_w = start_x + (cell_w * 7) + 15
 
     btn_prev_yr = { x = 0, y = 16, w = cell_w, h = 30, label = "<<" }
@@ -141,9 +141,7 @@ function love.draw()
 
     love.graphics.setColor(theme.colors.muted)
     local buttons = {btn_prev_yr, btn_prev_mo, btn_next_mo, btn_next_yr}
-    for _, btn in ipairs(buttons) do
-        love.graphics.printf(btn.label, font_main, btn.x, btn.y, btn.w, "center")
-    end
+    for _, btn in ipairs(buttons) do love.graphics.printf(btn.label, font_main, btn.x, btn.y, btn.w, "center") end
 
     local month_str = os.date("%B %Y", os.time({year = display_year, month = display_month, day = 1}))
     love.graphics.setColor(theme.colors.accent) 
@@ -155,26 +153,17 @@ function love.draw()
         love.graphics.printf(day_label, font_main, x, start_y, cell_w, "center")
     end
 
-    -- Draw the pre-calculated sequential weeks flawlessly
     love.graphics.setColor(theme.colors.muted)
     for r = 1, max_rows do
         local y = start_y + 24 + ((r - 1) * spacing_y) 
-        if row_weeks[r] then
-            love.graphics.printf(string.format("W%02d", row_weeks[r]), font_main, week_x, y + 1, start_x - week_x, "left")
-        end
+        if row_weeks[r] then love.graphics.printf(string.format("W%02d", row_weeks[r]), font_main, week_x, y + 1, start_x - week_x, "left") end
     end
 
-    -- Find the active row/col bounds of the user's selected date state
     local sel_row, sel_col = nil, nil
     for _, item in ipairs(calendar_grid) do
-        if item.day == selected_day then
-            sel_row = item.row
-            sel_col = item.col
-            break
-        end
+        if item.day == selected_day then sel_row = item.row; sel_col = item.col; break end
     end
 
-    -- Draw the clean, isolated calendar day numbers
     for _, item in ipairs(calendar_grid) do
         local x = start_x + (item.col - 1) * cell_w
         local y = start_y + 24 + ((item.row - 1) * spacing_y) 
@@ -184,10 +173,8 @@ function love.draw()
         item.x1 = x + 2
         item.y1 = y + 1
 
-        -- FIXED CROSSHAIR HIGHLIGHTING LAYER: Blends a robust 0.28 opacity backdrop tint 
-        -- across intersecting cells to follow selection targets without washing out typography!
         if item.day ~= selected_day and (item.row == sel_row or item.col == sel_col) then
-            love.graphics.setColor(theme.colors.muted, theme.colors.muted, theme.colors.muted, 0.28)
+            love.graphics.setColor(theme.colors.muted[1], theme.colors.muted[2], theme.colors.muted[3], 0.28)
             love.graphics.rectangle("fill", item.x1, item.y1, item.w, item.h, 4, 4)
         end
 
@@ -202,7 +189,7 @@ function love.draw()
             love.graphics.setColor(theme.colors.bg)     
         else
             if item.col == 1 or item.col == 7 then
-                love.graphics.setColor(theme.colors.today, theme.colors.today, theme.colors.today, 1.0)
+                love.graphics.setColor(theme.colors.today[1], theme.colors.today[2], theme.colors.today[3], 1.0)
             else
                 love.graphics.setColor(theme.colors.text)   
             end
@@ -212,29 +199,20 @@ function love.draw()
     end
 end
 
-local function check_collision(mx, my, btn)
-    return mx >= btn.x and mx <= (btn.x + btn.w) and my >= btn.y and my <= (btn.y + btn.h)
-end
-
+local function check_collision(mx, my, btn) return mx >= btn.x and mx <= (btn.x + btn.w) and my >= btn.y and my <= (btn.y + btn.h) end
 function love.mousepressed(mx, my, button)
     if button == 2 then love.event.quit() return end
     if button == 1 then 
         if check_collision(mx, my, btn_prev_yr) then display_year = display_year - 1 recalculate_calendar()
         elseif check_collision(mx, my, btn_prev_mo) then display_month = display_month - 1
-            if display_month < 1 then display_month = 12; display_year = display_year - 1; end
-            recalculate_calendar()
+            if display_month < 1 then display_month = 12; display_year = display_year - 1; end recalculate_calendar()
         elseif check_collision(mx, my, btn_next_mo) then display_month = display_month + 1
-            if display_month > 12 then display_month = 1; display_year = display_year + 1; end
-            recalculate_calendar()
+            if display_month > 12 then display_month = 1; display_year = display_year + 1; end recalculate_calendar()
         elseif check_collision(mx, my, btn_next_yr) then display_year = display_year + 1 recalculate_calendar() end
-
         for _, item in ipairs(calendar_grid) do
-            if item.x1 and mx >= item.x1 and mx <= (item.x1 + item.w) and my >= item.y1 and my <= (item.y1 + item.h) then
-                selected_day = item.day
-            end
+            if item.x1 and mx >= item.x1 and mx <= (item.x1 + item.w) and my >= item.y1 and my <= (item.y1 + item.h) then selected_day = item.day end
         end
     end
 end
-
 function love.keypressed(key) if key == "escape" or key == "q" then love.event.quit() end end
 
