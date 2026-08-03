@@ -37,7 +37,7 @@ NIX_CC='/nix/store/l5qkpzsr4gxvksh45b3nhxbkyr5cviar-gcc-wrapper-15.3.0'
 export NIX_CC
 NIX_CC_WRAPPER_TARGET_HOST_x86_64_unknown_linux_gnu='1'
 export NIX_CC_WRAPPER_TARGET_HOST_x86_64_unknown_linux_gnu
-NIX_CFLAGS_COMPILE=' -frandom-seed=0239iaa5wd -isystem /nix/store/867ngqlqx6278w934l1km5kycxd1srpf-python3-3.14.6-env/include -isystem /nix/store/gxzhl7aaiid7zp3y47jqqiq7zg5mqpwp-python3-3.14.6/include -isystem /nix/store/867ngqlqx6278w934l1km5kycxd1srpf-python3-3.14.6-env/include -isystem /nix/store/gxzhl7aaiid7zp3y47jqqiq7zg5mqpwp-python3-3.14.6/include'
+NIX_CFLAGS_COMPILE=' -frandom-seed=z08q2rn6c9 -isystem /nix/store/867ngqlqx6278w934l1km5kycxd1srpf-python3-3.14.6-env/include -isystem /nix/store/gxzhl7aaiid7zp3y47jqqiq7zg5mqpwp-python3-3.14.6/include -isystem /nix/store/867ngqlqx6278w934l1km5kycxd1srpf-python3-3.14.6-env/include -isystem /nix/store/gxzhl7aaiid7zp3y47jqqiq7zg5mqpwp-python3-3.14.6/include'
 export NIX_CFLAGS_COMPILE
 NIX_ENFORCE_NO_NATIVE='1'
 export NIX_ENFORCE_NO_NATIVE
@@ -190,7 +190,6 @@ declare -a propagatedTargetDepFiles=('propagated-target-target-deps' )
 shell='/nix/store/7ik8057hajl6vq9j40h3jracxjn0bb5x-bash-5.3p15/bin/bash'
 export shell
 shellHook='echo " 🐍 Python & PyQt6 Development Matrix Loaded! 🐍 "
-python --version
 '
 export shellHook
 stdenv='/nix/store/kmmhih3r2027rbq0ndw4vm6srdq6pl2c-stdenv-linux'

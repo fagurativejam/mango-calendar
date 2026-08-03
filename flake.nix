@@ -1,5 +1,5 @@
 {
-  description = "A modern Python and PyQt6 desktop calendar widget environment";
+  description = "A portable, zero-dependency Python and PyQt6 calendar widget for MangoWM";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -10,22 +10,26 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        
-        # Formulate Python 3 environment bundled with true PyQt6 bindings
-        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
-          pyqt6
-        ]);
       in {
-        # 1. Local development environment shell matrix
+        # ==================== NEW: PRODUCTION EXECUTABLE WRAPPER DERIVATION ====================
+        # Compiles your application source tracks into a single optimized native binary wrapper!
+        packages.default = pkgs.writers.writePython3Bin "mango-calendar" {
+          # Hard-wires PyQt6 inside the package sandbox context so it runs flawlessly out-of-the-box
+          libraries = [ pkgs.python3Packages.pyqt6 ];
+        } ''
+          # Injects your theme module and core application code strings inline cleanly
+          ${builtins.readFile ./theme.py}
+          ${builtins.readFile ./main.py}
+        '';
+
+        # Local development environment environment shell matrix
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pythonEnv
-            pkgs.python3Packages.python-lsp-server # Provides autocomplete for your IDE
+            (pkgs.python3.withPackages (ps: [ ps.pyqt6 ]))
+            pkgs.python3Packages.python-lsp-server
           ];
-
           shellHook = ''
             echo " 🐍 Python & PyQt6 Development Matrix Loaded! 🐍 "
-            python --version
           '';
         };
       });
