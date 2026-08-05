@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import datetime
 import calendar
@@ -81,13 +82,20 @@ class MangoCalendar(QWidget):
         self.header_layout = QHBoxLayout()
         self.main_layout.addLayout(self.header_layout)
 
-        lbl_prev_yr = QLabel("<<")
+        # Extract customized glyph sets safely with clean text fallbacks
+        btn_cfg = self.theme_dict.get("buttons", {})
+        glyph_prev_yr = btn_cfg.get("prev_yr", "<<")
+        glyph_prev_mo = btn_cfg.get("prev_mo", "<")
+        glyph_next_mo = btn_cfg.get("next_mo", ">")
+        glyph_next_yr = btn_cfg.get("next_yr", ">>")
+
+        lbl_prev_yr = QLabel(glyph_prev_yr)
         lbl_prev_yr.setObjectName("NavButton")
         lbl_prev_yr.setCursor(Qt.CursorShape.PointingHandCursor)
         lbl_prev_yr.mousePressEvent = lambda e: self.change_date(-12)
         self.header_layout.addWidget(lbl_prev_yr)
 
-        lbl_prev_mo = QLabel("<")
+        lbl_prev_mo = QLabel(glyph_prev_mo)
         lbl_prev_mo.setObjectName("NavButton")
         lbl_prev_mo.setCursor(Qt.CursorShape.PointingHandCursor)
         lbl_prev_mo.mousePressEvent = lambda e: self.change_date(-1)
@@ -98,13 +106,13 @@ class MangoCalendar(QWidget):
         self.lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.header_layout.addWidget(self.lbl_title, stretch=1)
 
-        lbl_next_mo = QLabel(">")
+        lbl_next_mo = QLabel(glyph_next_mo)
         lbl_next_mo.setObjectName("NavButton")
         lbl_next_mo.setCursor(Qt.CursorShape.PointingHandCursor)
         lbl_next_mo.mousePressEvent = lambda e: self.change_date(1)
         self.header_layout.addWidget(lbl_next_mo)
 
-        lbl_next_yr = QLabel(">>")
+        lbl_next_yr = QLabel(glyph_next_yr)
         lbl_next_yr.setObjectName("NavButton")
         lbl_next_yr.setCursor(Qt.CursorShape.PointingHandCursor)
         lbl_next_yr.mousePressEvent = lambda e: self.change_date(12)

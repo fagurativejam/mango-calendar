@@ -23,6 +23,12 @@ def load_qss_theme():
         theme = {
             "font_face": "JetBrainsMono Nerd Font",
             "font_size": 13,
+            "buttons": {
+                "prev_yr": "<<",
+                "prev_mo": "<",
+                "next_mo": ">",
+                "next_yr": ">>"
+            },
             "colors": {
                 "bg": "#1e1e2e",
                 "muted": "#585b70",
@@ -31,6 +37,10 @@ def load_qss_theme():
                 "today": "#f38ba8"
             }
         }
+    
+    # Ensure buttons fallback exists if a user passes a partial theme.json
+    if "buttons" not in theme:
+        theme["buttons"] = {"prev_yr": "<<", "prev_mo": "<", "next_mo": ">", "next_yr": ">>"}
 
     colors = theme["colors"]
     font_face = theme["font_face"]
